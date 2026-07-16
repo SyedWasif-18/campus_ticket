@@ -5,6 +5,10 @@ from io import BytesIO
 from django.core.files.base import ContentFile
 
 class Department(models.Model):
+    """
+    Represents a specific department in the college (e.g., CSE, ECE, Mechanical).
+    This helps group rooms and assign the correct maintenance staff (attenders) to them.
+    """
     name = models.CharField(max_length=100, unique=True)
     code = models.CharField(max_length=10, unique=True)
 
@@ -21,15 +25,17 @@ class Room(models.Model):
         return f"Room {self.room_number} - {self.department.code} (Floor {self.floor})"
 
     def save(self, *args, **kwargs):
-        # Save first to ensure we have an ID
+        # Save first to ensure the room has an ID in the database
         is_new = self.pk is None
         super().save(*args, **kwargs)
         
+        # Only generate a QR code if it's a newly created room or the image is missing
         if is_new or not self.qr_code:
             # We construct a URL pointing to the ticket creation page with the pre-filled room_id.
-            # During local development, this resolves to localhost.
+            # When someone scans this, it opens the complaint form for THIS specific room.
             qr_data = f"/tickets/raise/?room_id={self.id}"
             
+            # Setup the QR code structure
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -39,17 +45,23 @@ class Room(models.Model):
             qr.add_data(qr_data)
             qr.make(fit=True)
             
+            # Create the actual image file
             img = qr.make_image(fill_color="black", back_color="white")
             buffer = BytesIO()
             img.save(buffer, format='PNG')
             
+            # Save the image to the 'qr_codes/' directory
             filename = f"room_{self.room_number}_qr.png"
             self.qr_code.save(filename, ContentFile(buffer.getvalue()), save=False)
             
-            # Save again to write the qr_code path to the DB
+            # Save the room model again, this time updating the database with the image path
             super().save(update_fields=['qr_code'])
 
 class Ticket(models.Model):
+    """
+    The most important model in the app. Represents a maintenance complaint raised by a Faculty member.
+    It tracks the problem, who raised it, who is fixing it (attender), and its current status.
+    """
     CATEGORY_CHOICES = (
         ('SUPPLIES', 'Classroom Supplies'),
         ('TECHNICAL', 'Technical Issues'),

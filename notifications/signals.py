@@ -37,7 +37,17 @@ def ticket_notification_handler(sender, instance, created, **kwargs):
                 "message": message,
                 "ticket_id": instance.id,
                 "status": instance.status,
-                "action": "CREATE"
+                "action": "CREATE",
+                "ticket_data": {
+                    "id": instance.id,
+                    "category_class": instance.category.lower(),
+                    "sub_category": instance.get_sub_category_display(),
+                    "description": instance.description or "",
+                    "room_number": room.room_number,
+                    "priority_class": instance.priority.lower(),
+                    "priority_display": instance.get_priority_display(),
+                    "faculty_name": faculty.get_full_name() or faculty.username,
+                }
             }
         )
         

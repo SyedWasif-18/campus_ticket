@@ -63,9 +63,14 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
     # Custom helper to receive notifications from channel groups and send to WebSocket client
     async def send_notification(self, event):
-        await self.send(text_data=json.dumps({
+        payload = {
             'message': event['message'],
             'ticket_id': event.get('ticket_id'),
             'status': event.get('status'),
             'action': event.get('action'),
-        }))
+        }
+        
+        if 'ticket_data' in event:
+            payload['ticket_data'] = event['ticket_data']
+            
+        await self.send(text_data=json.dumps(payload))

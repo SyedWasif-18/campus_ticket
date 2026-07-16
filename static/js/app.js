@@ -196,21 +196,50 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // If a new ticket is created, we could ideally append it here, 
-        // but since we only get the text message from WS, the cleanest approach 
-        // without sending full JSON payload is to refresh or notify to refresh.
         if (data.action === 'CREATE') {
             updateCounts(1);
-            // We just add a basic row indicating a new ticket is available to prompt a refresh
             if (emptyMsg) emptyMsg.style.display = 'none';
-            const tr = document.createElement('tr');
-            tr.className = 'table-row-animate';
-            tr.innerHTML = `
-                <td colspan="7" style="text-align: center; color: var(--primary);">
-                    <i class="bi bi-arrow-clockwise"></i> New ticket raised! Please refresh the page to view details.
-                </td>
-            `;
-            tbody.insertBefore(tr, tbody.firstChild);
+            
+            if (data.ticket_data) {
+                const tr = document.createElement('tr');
+                tr.className = 'table-row-animate';
+                tr.id = `ticket-row-${data.ticket_id}`;
+                
+                let descHtml = data.ticket_data.description ? `<small class="text-muted">${data.ticket_data.description.substring(0, 40)}</small>` : '';
+                
+                tr.innerHTML = `
+                    <td><span class="ticket-id">#${data.ticket_data.id}</span></td>
+                    <td>
+                        <div class="ticket-category">
+                            <span class="category-dot cat-${data.ticket_data.category_class}"></span>
+                            ${data.ticket_data.sub_category}
+                        </div>
+                        ${descHtml}
+                    </td>
+                    <td>${data.ticket_data.room_number}</td>
+                    <td><span class="priority-badge priority-${data.ticket_data.priority_class}">${data.ticket_data.priority_display}</span></td>
+                    <td>${data.ticket_data.faculty_name}</td>
+                    <td>Just now</td>
+                    <td>
+                        <a href="/tickets/${data.ticket_id}/accept/" class="btn btn-primary-sm">
+                            <i class="bi bi-check2-circle"></i> Accept
+                        </a>
+                        <a href="/tickets/${data.ticket_id}/" class="btn btn-ghost-sm">
+                            <i class="bi bi-eye-fill"></i>
+                        </a>
+                    </td>
+                `;
+                tbody.insertBefore(tr, tbody.firstChild);
+            } else {
+                const tr = document.createElement('tr');
+                tr.className = 'table-row-animate';
+                tr.innerHTML = `
+                    <td colspan="7" style="text-align: center; color: var(--primary);">
+                        <i class="bi bi-arrow-clockwise"></i> New ticket raised! Please refresh the page to view details.
+                    </td>
+                `;
+                tbody.insertBefore(tr, tbody.firstChild);
+            }
         }
         
         function updateCounts(diff) {
