@@ -1,0 +1,77 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Manage Users — Admin Dashboard{% endblock %}
+{% block nav_users %}active{% endblock %}
+{% block page_title %}User Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-heading">User Directory</h1>
+        <p class="page-subtitle">Manage faculty and attenders across departments.</p>
+    </div>
+    <a href="{% url 'accounts:create_user' %}" class="btn btn-primary">
+        <i class="bi bi-person-plus-fill"></i> Add New User
+    </a>
+</div>
+
+<div class="card card-lg">
+    <div class="card-header">
+        <h2 class="card-title"><i class="bi bi-people-fill"></i> System Users</h2>
+        <form method="get" class="filter-inline">
+            <select name="role" class="form-select-sm" onchange="this.form.submit()">
+                <option value="">All Roles</option>
+                <option value="FACULTY" {% if role_filter == 'FACULTY' %}selected{% endif %}>Faculty</option>
+                <option value="ATTENDER" {% if role_filter == 'ATTENDER' %}selected{% endif %}>Attenders</option>
+            </select>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th>Department</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in page_obj %}
+                    <tr class="table-row-animate">
+                        <td class="font-weight-600">{{ u.username }}</td>
+                        <td>{{ u.get_full_name|default:"—" }}</td>
+                        <td><span class="role-badge role-{{ u.role|lower }}">{{ u.get_role_display }}</span></td>
+                        <td>{{ u.department.name|default:"—" }}</td>
+                        <td>
+                            <a href="{% url 'accounts:edit_user' u.id %}" class="btn btn-ghost-sm"><i class="bi bi-pencil-square text-primary"></i></a>
+                            <a href="{% url 'accounts:delete_user' u.id %}" class="btn btn-ghost-sm"><i class="bi bi-trash-fill text-danger"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No users found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer" style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-light);">
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if role_filter %}&role={{ role_filter }}{% endif %}" class="btn btn-secondary btn-sm">&laquo; Prev</a>
+                {% endif %}
+                <span style="padding: 0.5rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if role_filter %}&role={{ role_filter }}{% endif %}" class="btn btn-secondary btn-sm">Next &raquo;</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

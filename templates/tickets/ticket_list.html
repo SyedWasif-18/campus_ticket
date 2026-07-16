@@ -1,0 +1,97 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}All Tickets — Campus Helpdesk{% endblock %}
+{% block nav_list %}active{% endblock %}
+{% block nav_list_att %}active{% endblock %}
+{% block nav_tickets_admin %}active{% endblock %}
+{% block page_title %}Ticket Directory{% endblock %}
+
+{% block content %}
+<div class="card card-lg">
+    <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+        <h2 class="card-title"><i class="bi bi-list-task"></i> Tickets</h2>
+        <form method="get" class="filter-inline" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <input type="text" name="search" class="form-control" placeholder="Search..." value="{{ search_query }}" style="width: 200px; padding: 0.4rem 0.8rem;">
+            
+            <select name="status" class="form-select-sm">
+                <option value="">All Statuses</option>
+                {% for val, label in status_choices %}
+                <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            
+            <select name="department" class="form-select-sm">
+                <option value="">All Departments</option>
+                {% for d in departments %}
+                <option value="{{ d.id }}" {% if dept_filter == d.id|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+            
+            <input type="date" name="date" class="form-control" value="{{ date_filter }}" style="width: auto; padding: 0.4rem;">
+            
+            <button type="submit" class="btn btn-primary-sm"><i class="bi bi-filter"></i> Filter</button>
+            <a href="?" class="btn btn-ghost-sm">Clear</a>
+        </form>
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Issue</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in page_obj %}
+                    <tr class="table-row-animate">
+                        <td><a href="{% url 'tickets:ticket_detail' ticket.id %}" class="ticket-id">#{{ ticket.id }}</a></td>
+                        <td>
+                            <div class="ticket-category">
+                                <span class="category-dot cat-{{ ticket.category|lower }}"></span>
+                                {{ ticket.sub_category }}
+                            </div>
+                        </td>
+                        <td>Room {{ ticket.room.room_number }}</td>
+                        <td><span class="status-badge status-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span></td>
+                        <td><span class="priority-badge priority-{{ ticket.priority|lower }}">{{ ticket.get_priority_display }}</span></td>
+                        <td>{{ ticket.created_at|date:"d M Y" }}</td>
+                        <td>
+                            <a href="{% url 'tickets:ticket_detail' ticket.id %}" class="btn btn-ghost-sm"><i class="bi bi-eye-fill"></i> View</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-search" style="font-size: 2rem;"></i>
+                            <p class="mt-2">No tickets found matching your criteria.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer" style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-light);">
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}&department={{ dept_filter }}&date={{ date_filter }}" class="btn btn-secondary btn-sm">&laquo; Prev</a>
+                {% endif %}
+                <span style="padding: 0.5rem;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&status={{ status_filter }}&department={{ dept_filter }}&date={{ date_filter }}" class="btn btn-secondary btn-sm">Next &raquo;</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

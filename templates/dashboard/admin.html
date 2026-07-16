@@ -1,0 +1,299 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Admin Dashboard — Campus Helpdesk{% endblock %}
+{% block nav_admin %}active{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-heading">Admin Dashboard</h1>
+        <p class="page-subtitle">System-wide overview and analytics.</p>
+    </div>
+    <div class="topbar-actions-group">
+        <a href="{% url 'dashboard:export_tickets' %}" class="btn btn-secondary">
+            <i class="bi bi-file-earmark-arrow-down-fill"></i> Export CSV
+        </a>
+        <a href="{% url 'accounts:create_user' %}" class="btn btn-primary">
+            <i class="bi bi-person-plus-fill"></i> Add User
+        </a>
+    </div>
+</div>
+
+<!-- KPI Cards Row 1 -->
+<div class="kpi-grid">
+    <div class="kpi-card kpi-blue">
+        <div class="kpi-icon"><i class="bi bi-ticket-detailed-fill"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Total Tickets</span>
+            <span class="kpi-value">{{ kpi.total }}</span>
+        </div>
+    </div>
+    <div class="kpi-card kpi-amber">
+        <div class="kpi-icon"><i class="bi bi-exclamation-circle-fill"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Open Tickets</span>
+            <span class="kpi-value">{{ kpi.open }}</span>
+        </div>
+    </div>
+    <div class="kpi-card kpi-green">
+        <div class="kpi-icon"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Completed</span>
+            <span class="kpi-value">{{ kpi.completed }}</span>
+        </div>
+    </div>
+    <div class="kpi-card kpi-red">
+        <div class="kpi-icon"><i class="bi bi-x-circle-fill"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Cancelled</span>
+            <span class="kpi-value">{{ kpi.cancelled }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- KPI Cards Row 2 -->
+<div class="kpi-grid kpi-grid-4-secondary mt-4">
+    <div class="kpi-card kpi-purple">
+        <div class="kpi-icon"><i class="bi bi-stopwatch-fill"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Avg. Resolution</span>
+            <span class="kpi-value">{{ kpi.avg_resolution }} <small>min</small></span>
+        </div>
+    </div>
+    <div class="kpi-card kpi-teal">
+        <div class="kpi-icon"><i class="bi bi-star-fill"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Avg. Rating</span>
+            <span class="kpi-value">{{ kpi.avg_rating }} <small>/ 5</small></span>
+        </div>
+    </div>
+    <div class="kpi-card kpi-indigo">
+        <div class="kpi-icon"><i class="bi bi-people-fill"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Total Users</span>
+            <span class="kpi-value">{{ kpi.total_users }}</span>
+        </div>
+    </div>
+    <div class="kpi-card kpi-cyan">
+        <div class="kpi-icon"><i class="bi bi-diagram-3-fill"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Departments</span>
+            <span class="kpi-value">{{ kpi.total_departments }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="chart-grid mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-pie-chart-fill"></i> Tickets by Status</h2>
+        </div>
+        <div class="card-body chart-body">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-graph-up-arrow"></i> Tickets over Last 30 Days</h2>
+        </div>
+        <div class="card-body chart-body">
+            <canvas id="timelineChart"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-bar-chart-fill"></i> Top Issues</h2>
+        </div>
+        <div class="card-body chart-body">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-star-half"></i> Rating Distribution</h2>
+        </div>
+        <div class="card-body chart-body">
+            <canvas id="ratingChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Department stats + Recent Tickets -->
+<div class="content-grid mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-building"></i> Tickets by Department</h2>
+            <a href="{% url 'tickets:manage_departments' %}" class="card-header-link">Manage</a>
+        </div>
+        <div class="card-body p-0">
+            {% if dept_stats %}
+            <ul class="dept-list">
+                {% for dept in dept_stats %}
+                <li class="dept-item">
+                    <div class="dept-info">
+                        <span class="dept-name">{{ dept.name }}</span>
+                        <span class="dept-code">{{ dept.code }}</span>
+                    </div>
+                    <div class="dept-bar-wrap">
+                        <div class="dept-bar" style="width: {% widthratio dept.ticket_count dept_stats.0.ticket_count 100 %}%"></div>
+                    </div>
+                    <span class="dept-count">{{ dept.ticket_count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-building empty-icon"></i>
+                <p>No departments yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card card-lg">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-clock-history"></i> Recent Tickets</h2>
+            <a href="{% url 'tickets:ticket_list' %}" class="card-header-link">View all</a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Issue</th>
+                            <th>Room / Dept.</th>
+                            <th>Faculty</th>
+                            <th>Attender</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in recent_tickets %}
+                        <tr class="table-row-animate">
+                            <td><a href="{% url 'tickets:ticket_detail' ticket.id %}" class="ticket-id">#{{ ticket.id }}</a></td>
+                            <td>
+                                <span class="category-dot cat-{{ ticket.category|lower }}"></span>
+                                {{ ticket.sub_category }}
+                            </td>
+                            <td>{{ ticket.room.room_number }} / {{ ticket.room.department.code }}</td>
+                            <td>{{ ticket.faculty.username }}</td>
+                            <td>{{ ticket.attender.username|default:"—" }}</td>
+                            <td><span class="status-badge status-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span></td>
+                            <td>{{ ticket.created_at|date:"d M, H:i" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const API_STATUS_URL = "{% url 'dashboard:api_status' %}";
+const API_TIMELINE_URL = "{% url 'dashboard:api_timeline' %}";
+const API_CATEGORY_URL = "{% url 'dashboard:api_category' %}";
+const API_RATINGS_URL = "{% url 'dashboard:api_ratings' %}";
+
+const CHART_COLORS = {
+    blue: '#3b82f6', green: '#22c55e', amber: '#f59e0b',
+    red: '#ef4444', purple: '#a855f7', teal: '#14b8a6',
+    indigo: '#6366f1', cyan: '#06b6d4', pink: '#ec4899'
+};
+
+async function fetchJSON(url) {
+    const res = await fetch(url);
+    return res.json();
+}
+
+async function initCharts() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#94a3b8' : '#475569';
+    const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+
+    // Status Doughnut
+    const statusData = await fetchJSON(API_STATUS_URL);
+    const statusLabels = ['PENDING','ACCEPTED','IN_PROGRESS','COMPLETED','CANCELLED'];
+    const statusColors = [CHART_COLORS.amber, CHART_COLORS.blue, CHART_COLORS.purple, CHART_COLORS.green, CHART_COLORS.red];
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: statusLabels.map(s => s.replace('_', ' ')),
+            datasets: [{ data: statusLabels.map(l => statusData[l] || 0), backgroundColor: statusColors, borderWidth: 0, hoverOffset: 8 }]
+        },
+        options: { plugins: { legend: { labels: { color: textColor, font: { family: 'Inter' } } } }, cutout: '65%' }
+    });
+
+    // Timeline Line Chart
+    const tlData = await fetchJSON(API_TIMELINE_URL);
+    new Chart(document.getElementById('timelineChart'), {
+        type: 'line',
+        data: {
+            labels: tlData.labels,
+            datasets: [{
+                label: 'Tickets', data: tlData.counts,
+                borderColor: CHART_COLORS.blue, backgroundColor: 'rgba(59,130,246,0.15)',
+                fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: CHART_COLORS.blue
+            }]
+        },
+        options: {
+            scales: {
+                x: { ticks: { color: textColor, font: { family: 'Inter' } }, grid: { color: gridColor } },
+                y: { ticks: { color: textColor, font: { family: 'Inter' } }, grid: { color: gridColor }, beginAtZero: true }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Category Bar Chart
+    const catData = await fetchJSON(API_CATEGORY_URL);
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'bar',
+        data: {
+            labels: catData.labels,
+            datasets: [{
+                label: 'Tickets', data: catData.counts,
+                backgroundColor: Object.values(CHART_COLORS),
+                borderRadius: 6, borderWidth: 0
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            scales: {
+                x: { ticks: { color: textColor, font: { family: 'Inter' } }, grid: { color: gridColor }, beginAtZero: true },
+                y: { ticks: { color: textColor, font: { family: 'Inter' } }, grid: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Rating Distribution Bar
+    const ratingData = await fetchJSON(API_RATINGS_URL);
+    new Chart(document.getElementById('ratingChart'), {
+        type: 'bar',
+        data: {
+            labels: ['1 ★', '2 ★', '3 ★', '4 ★', '5 ★'],
+            datasets: [{
+                label: 'Count', data: ['1','2','3','4','5'].map(k => ratingData[k] || 0),
+                backgroundColor: [CHART_COLORS.red, CHART_COLORS.amber, CHART_COLORS.cyan, CHART_COLORS.blue, CHART_COLORS.green],
+                borderRadius: 6, borderWidth: 0
+            }]
+        },
+        options: {
+            scales: {
+                x: { ticks: { color: textColor, font: { family: 'Inter' } }, grid: { display: false } },
+                y: { ticks: { color: textColor, font: { family: 'Inter' } }, grid: { color: gridColor }, beginAtZero: true }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initCharts);
+</script>
+{% endblock %}

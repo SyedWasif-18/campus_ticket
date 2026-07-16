@@ -1,0 +1,60 @@
+{% extends 'base_dashboard.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Manage Departments — Admin Dashboard{% endblock %}
+{% block nav_depts %}active{% endblock %}
+{% block page_title %}Departments{% endblock %}
+
+{% block content %}
+<div class="content-grid" style="grid-template-columns: 2fr 1fr;">
+    <div class="card card-lg">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-building"></i> Departments</h2>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Rooms</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dept in departments %}
+                        <tr class="table-row-animate">
+                            <td class="font-weight-600">{{ dept.code }}</td>
+                            <td>{{ dept.name }}</td>
+                            <td>{{ dept.rooms.count }}</td>
+                            <td>
+                                <a href="{% url 'tickets:edit_department' dept.id %}" class="btn btn-ghost-sm"><i class="bi bi-pencil-square text-primary"></i></a>
+                                <a href="{% url 'tickets:delete_department' dept.id %}" class="btn btn-ghost-sm"><i class="bi bi-trash-fill text-danger"></i></a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">No departments created yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-plus-circle"></i> Add Department</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% bootstrap_form form %}
+                <button type="submit" class="btn btn-primary btn-block mt-3">Add Department</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

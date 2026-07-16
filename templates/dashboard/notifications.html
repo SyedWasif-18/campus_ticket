@@ -1,0 +1,47 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Notifications — Campus Helpdesk{% endblock %}
+{% block nav_notifs %}active{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-heading">Your Notifications</h1>
+        <p class="page-subtitle">All updates related to your tickets.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        {% if notifications %}
+        <ul class="notif-list notif-list-full">
+            {% for notif in notifications %}
+            <li class="notif-item-full {% if not notif.is_read %}notif-unread{% endif %}">
+                <div class="notif-dot"></div>
+                <div class="notif-content">
+                    <p class="notif-message">{{ notif.message }}</p>
+                    <div class="notif-meta">
+                        <span class="notif-time"><i class="bi bi-clock"></i> {{ notif.created_at|date:"d M Y, H:i" }}</span>
+                        {% if notif.ticket %}
+                        <a href="{% url 'tickets:ticket_detail' notif.ticket.id %}" class="notif-link">
+                            View Ticket #{{ notif.ticket.id }} <i class="bi bi-arrow-right"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <span class="notif-badge {% if notif.is_read %}notif-read-badge{% else %}notif-new-badge{% endif %}">
+                    {% if notif.is_read %}Read{% else %}New{% endif %}
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state empty-state-lg">
+            <i class="bi bi-bell-slash empty-icon"></i>
+            <h3>No notifications yet</h3>
+            <p>You'll see updates here when ticket statuses change.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

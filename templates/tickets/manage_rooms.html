@@ -1,0 +1,90 @@
+{% extends 'base_dashboard.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Manage Rooms — Admin Dashboard{% endblock %}
+{% block nav_rooms %}active{% endblock %}
+{% block page_title %}Rooms & QR Codes{% endblock %}
+
+{% block content %}
+<div class="content-grid" style="grid-template-columns: 2fr 1fr;">
+    <div class="card card-lg">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-door-open-fill"></i> Facility Rooms</h2>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Room #</th>
+                            <th>Floor</th>
+                            <th>Department</th>
+                            <th>QR Code</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for room in rooms %}
+                        <tr class="table-row-animate">
+                            <td class="font-weight-600">{{ room.room_number }}</td>
+                            <td>{{ room.floor }}</td>
+                            <td>{{ room.department.name }}</td>
+                            <td>
+                                {% if room.qr_code %}
+                                <a href="{% url 'tickets:download_qr' room.id %}" class="btn btn-secondary btn-sm" target="_blank">
+                                    <i class="bi bi-qr-code"></i> Get QR
+                                </a>
+                                {% else %}
+                                <span class="text-muted">None</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'tickets:edit_room' room.id %}" class="btn btn-ghost-sm"><i class="bi bi-pencil-square text-primary"></i></a>
+                                <a href="{% url 'tickets:delete_room' room.id %}" class="btn btn-ghost-sm"><i class="bi bi-trash-fill text-danger"></i></a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No rooms created yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if rooms.has_other_pages %}
+            <div class="card-footer" style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-light);">
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                    {% if rooms.has_previous %}
+                        <a href="?page={{ rooms.previous_page_number }}" class="btn btn-secondary btn-sm">&laquo; Prev</a>
+                    {% endif %}
+                    <span style="padding: 0.5rem;">Page {{ rooms.number }} of {{ rooms.paginator.num_pages }}</span>
+                    {% if rooms.has_next %}
+                        <a href="?page={{ rooms.next_page_number }}" class="btn btn-secondary btn-sm">Next &raquo;</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-plus-circle"></i> Add Room</h2>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% bootstrap_form form %}
+                <button type="submit" class="btn btn-primary btn-block mt-3">Add Room</button>
+            </form>
+            
+            <hr class="mt-4 mb-4">
+            
+            <a href="{% url 'tickets:download_all_qrs' %}" class="btn btn-secondary btn-block">
+                <i class="bi bi-file-earmark-zip-fill text-primary"></i> Download All QR Codes
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

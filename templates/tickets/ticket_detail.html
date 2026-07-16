@@ -1,0 +1,135 @@
+{% extends 'base_dashboard.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Ticket #{{ ticket.id }} — Campus Helpdesk{% endblock %}
+{% block page_title %}Ticket Details{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="javascript:history.back()" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back
+    </a>
+</div>
+
+<div class="content-grid" style="grid-template-columns: 2fr 1fr;">
+    <!-- Main Info -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <span class="category-dot cat-{{ ticket.category|lower }}"></span>
+                {{ ticket.sub_category }}
+            </h2>
+            <span class="status-badge status-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                <div>
+                    <span class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Location</span>
+                    <p style="font-weight: 600; font-size: 1.1rem;"><i class="bi bi-door-closed"></i> Room {{ ticket.room.room_number }} ({{ ticket.room.department.code }})</p>
+                </div>
+                <div>
+                    <span class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Priority</span>
+                    <p><span class="priority-badge priority-{{ ticket.priority|lower }}">{{ ticket.get_priority_display }}</span></p>
+                </div>
+                <div>
+                    <span class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Raised By</span>
+                    <p style="font-weight: 500;"><i class="bi bi-person-circle text-muted"></i> {{ ticket.faculty.get_full_name|default:ticket.faculty.username }}</p>
+                </div>
+                <div>
+                    <span class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Assigned To</span>
+                    <p style="font-weight: 500;">
+                        {% if ticket.attender %}
+                        <i class="bi bi-person-badge text-primary"></i> {{ ticket.attender.get_full_name|default:ticket.attender.username }}
+                        {% else %}
+                        <em class="text-muted">Unassigned</em>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            {% if ticket.description %}
+            <div>
+                <span class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Description</span>
+                <div style="background: var(--bg-surface-hover); padding: 1rem; border-radius: var(--radius-md); margin-top: 0.5rem;">
+                    {{ ticket.description|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Actions & Timeline -->
+    <div>
+        <div class="card mb-4">
+            <div class="card-header"><h2 class="card-title">Actions</h2></div>
+            <div class="card-body">
+                {% if user.role == 'FACULTY' and ticket.status == 'PENDING' %}
+                    <a href="{% url 'tickets:cancel_ticket' ticket.id %}" class="btn btn-primary btn-block" style="background: var(--danger); border: none;">
+                        <i class="bi bi-x-circle-fill"></i> Cancel Ticket
+                    </a>
+                {% elif user.role == 'ATTENDER' %}
+                    {% if ticket.status == 'PENDING' %}
+                        <a href="{% url 'tickets:accept_ticket' ticket.id %}" class="btn btn-primary btn-block">
+                            <i class="bi bi-check2-circle"></i> Accept Ticket
+                        </a>
+                    {% elif ticket.status == 'ACCEPTED' and ticket.attender == user %}
+                        <form method="post" action="{% url 'tickets:update_ticket_status' ticket.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="IN_PROGRESS">
+                            <button type="submit" class="btn btn-primary btn-block" style="background: var(--purple); border: none;">
+                                <i class="bi bi-arrow-repeat"></i> Start Progress
+                            </button>
+                        </form>
+                    {% elif ticket.status == 'IN_PROGRESS' and ticket.attender == user %}
+                        <form method="post" action="{% url 'tickets:update_ticket_status' ticket.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="COMPLETED">
+                            <button type="submit" class="btn btn-primary btn-block" style="background: var(--success); border: none;">
+                                <i class="bi bi-check-circle-fill"></i> Mark Completed
+                            </button>
+                        </form>
+                    {% else %}
+                        <p class="text-muted text-center"><i class="bi bi-info-circle"></i> No actions available.</p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted text-center"><i class="bi bi-info-circle"></i> No actions available.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if rating_form %}
+        <div class="card">
+            <div class="card-header"><h2 class="card-title"><i class="bi bi-star-half"></i> Rate Service</h2></div>
+            <div class="card-body">
+                <form method="post" action="{% url 'tickets:submit_rating' ticket.id %}">
+                    {% csrf_token %}
+                    {% bootstrap_form rating_form %}
+                    <button type="submit" class="btn btn-primary btn-block mt-3">Submit Feedback</button>
+                </form>
+            </div>
+        </div>
+        {% elif hasattr %}
+        {% endif %}
+        
+        {% if ticket.rating %}
+        <div class="card mt-4">
+            <div class="card-header"><h2 class="card-title">Feedback Given</h2></div>
+            <div class="card-body text-center">
+                <div style="font-size: 2rem; color: var(--warning); margin-bottom: 0.5rem;">
+                    {% for i in '12345' %}
+                        {% if forloop.counter <= ticket.rating.score %}
+                        <i class="bi bi-star-fill"></i>
+                        {% else %}
+                        <i class="bi bi-star"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% if ticket.rating.comments %}
+                <p class="text-muted">"{{ ticket.rating.comments }}"</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

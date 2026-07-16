@@ -1,0 +1,180 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}Attender Dashboard — Campus Helpdesk{% endblock %}
+{% block nav_attender %}active{% endblock %}
+{% block page_title %}Attender Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-heading">Attender Dashboard</h1>
+        <p class="page-subtitle">
+            {% if dept %}Serving <strong>{{ dept.name }}</strong> department{% else %}No department assigned{% endif %}
+        </p>
+    </div>
+    <div class="live-indicator" id="live-dot">
+        <span class="live-pulse"></span> Live Feed
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid kpi-grid-3">
+    <div class="kpi-card kpi-amber">
+        <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Pending in Dept.</span>
+            <span class="kpi-value" id="kpi-pending">{{ kpi.pending_dept }}</span>
+        </div>
+    </div>
+    <div class="kpi-card kpi-purple">
+        <div class="kpi-icon"><i class="bi bi-lightning-fill"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">My Active</span>
+            <span class="kpi-value">{{ kpi.my_active }}</span>
+        </div>
+    </div>
+    <div class="kpi-card kpi-green">
+        <div class="kpi-icon"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Completed by Me</span>
+            <span class="kpi-value">{{ kpi.my_completed }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="content-grid">
+    <!-- Pending Tickets (Live) -->
+    <div class="card card-lg">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="bi bi-broadcast-pin text-danger"></i> Pending Tickets
+                <span class="badge-count" id="pending-count-badge">{{ kpi.pending_dept }}</span>
+            </h2>
+            <span class="text-muted small">Updates live via WebSocket</span>
+        </div>
+        <div class="card-body p-0" id="pending-tickets-container">
+            {% if pending_tickets %}
+            <div class="table-responsive">
+                <table class="data-table" id="pending-tickets-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Issue</th>
+                            <th>Room</th>
+                            <th>Priority</th>
+                            <th>Faculty</th>
+                            <th>Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pending-tbody">
+                        {% for ticket in pending_tickets %}
+                        <tr class="table-row-animate" id="ticket-row-{{ ticket.id }}">
+                            <td><span class="ticket-id">#{{ ticket.id }}</span></td>
+                            <td>
+                                <div class="ticket-category">
+                                    <span class="category-dot cat-{{ ticket.category|lower }}"></span>
+                                    {{ ticket.sub_category }}
+                                </div>
+                                {% if ticket.description %}
+                                <small class="text-muted">{{ ticket.description|truncatechars:40 }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ ticket.room.room_number }}</td>
+                            <td><span class="priority-badge priority-{{ ticket.priority|lower }}">{{ ticket.get_priority_display }}</span></td>
+                            <td>{{ ticket.faculty.get_full_name|default:ticket.faculty.username }}</td>
+                            <td>{{ ticket.created_at|timesince }} ago</td>
+                            <td>
+                                <a href="{% url 'tickets:accept_ticket' ticket.id %}" class="btn btn-primary-sm">
+                                    <i class="bi bi-check2-circle"></i> Accept
+                                </a>
+                                <a href="{% url 'tickets:ticket_detail' ticket.id %}" class="btn btn-ghost-sm">
+                                    <i class="bi bi-eye-fill"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state" id="no-pending-msg">
+                <i class="bi bi-emoji-smile empty-icon text-success"></i>
+                <p>All clear! No pending tickets right now.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- My Active Tickets -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-person-check-fill"></i> My Assigned Tickets</h2>
+        </div>
+        <div class="card-body p-0">
+            {% if my_tickets %}
+            <ul class="ticket-quick-list">
+                {% for ticket in my_tickets %}
+                <li class="ticket-quick-item">
+                    <div class="ticket-quick-info">
+                        <span class="ticket-id">#{{ ticket.id }}</span>
+                        <span class="ticket-name">{{ ticket.sub_category }}</span>
+                        <small class="text-muted">Room {{ ticket.room.room_number }}</small>
+                    </div>
+                    <div class="ticket-quick-actions">
+                        <span class="status-badge status-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span>
+                        <a href="{% url 'tickets:ticket_detail' ticket.id %}" class="btn btn-ghost-sm">
+                            <i class="bi bi-arrow-right-circle-fill"></i>
+                        </a>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-inbox empty-icon"></i>
+                <p>No tickets assigned to you yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Notifications Panel -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h2 class="card-title"><i class="bi bi-bell-fill"></i> Recent Notifications
+            {% if unread_count %}<span class="badge-count">{{ unread_count }}</span>{% endif %}
+        </h2>
+        <a href="{% url 'dashboard:notifications' %}" class="card-header-link">View all</a>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_notifications %}
+        <ul class="notif-list">
+            {% for notif in recent_notifications %}
+            <li class="notif-item {% if not notif.is_read %}notif-unread{% endif %}">
+                <div class="notif-dot"></div>
+                <div class="notif-content">
+                    <p class="notif-message">{{ notif.message }}</p>
+                    <span class="notif-time">{{ notif.created_at|timesince }} ago</span>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-bell-slash empty-icon"></i>
+            <p>No notifications.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Expose Django URL for JS to use
+const ACCEPT_URL_TEMPLATE = "{% url 'tickets:accept_ticket' 0 %}".replace('/0/', '/');
+const TICKET_DETAIL_URL_TEMPLATE = "{% url 'tickets:ticket_detail' 0 %}".replace('/0/', '/');
+</script>
+{% endblock %}

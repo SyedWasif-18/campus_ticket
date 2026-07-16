@@ -1,0 +1,144 @@
+{% extends 'base_dashboard.html' %}
+{% block title %}My Dashboard — Campus Helpdesk{% endblock %}
+{% block nav_faculty %}active{% endblock %}
+{% block page_title %}Faculty Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-heading">Welcome back, {{ user.first_name|default:user.username }}! 👋</h1>
+        <p class="page-subtitle">Here's the status of your facility requests.</p>
+    </div>
+    <a href="{% url 'tickets:raise_ticket' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-plus-circle-fill"></i> Raise New Ticket
+    </a>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card kpi-blue">
+        <div class="kpi-icon"><i class="bi bi-ticket-detailed-fill"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Total Tickets</span>
+            <span class="kpi-value">{{ kpi.total }}</span>
+        </div>
+    </div>
+    <div class="kpi-card kpi-amber">
+        <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Pending</span>
+            <span class="kpi-value">{{ kpi.pending }}</span>
+        </div>
+    </div>
+    <div class="kpi-card kpi-purple">
+        <div class="kpi-icon"><i class="bi bi-arrow-repeat"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">In Progress</span>
+            <span class="kpi-value">{{ kpi.in_progress }}</span>
+        </div>
+    </div>
+    <div class="kpi-card kpi-green">
+        <div class="kpi-icon"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="kpi-info">
+            <span class="kpi-label">Completed</span>
+            <span class="kpi-value">{{ kpi.completed }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="content-grid">
+    <!-- Tickets Table -->
+    <div class="card card-lg">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-list-task"></i> My Tickets</h2>
+            <form method="get" class="filter-inline">
+                <select name="status" class="form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    {% for val, label in status_choices %}
+                    <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <div class="card-body p-0">
+            {% if tickets %}
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Category</th>
+                            <th>Room</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Raised On</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr class="table-row-animate">
+                            <td><span class="ticket-id">#{{ ticket.id }}</span></td>
+                            <td>
+                                <div class="ticket-category">
+                                    <span class="category-dot cat-{{ ticket.category|lower }}"></span>
+                                    {{ ticket.sub_category }}
+                                </div>
+                            </td>
+                            <td>{{ ticket.room.room_number }}</td>
+                            <td><span class="priority-badge priority-{{ ticket.priority|lower }}">{{ ticket.get_priority_display }}</span></td>
+                            <td><span class="status-badge status-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span></td>
+                            <td>{{ ticket.created_at|date:"d M Y, H:i" }}</td>
+                            <td>
+                                <a href="{% url 'tickets:ticket_detail' ticket.id %}" class="btn btn-ghost-sm">
+                                    <i class="bi bi-eye-fill"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer-link">
+                <a href="{% url 'tickets:ticket_list' %}">View all tickets &rarr;</a>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-inbox empty-icon"></i>
+                <p>No tickets yet. <a href="{% url 'tickets:raise_ticket' %}">Raise your first ticket!</a></p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent Notifications -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="bi bi-bell-fill"></i> Notifications
+                {% if unread_count %}<span class="badge-count">{{ unread_count }}</span>{% endif %}
+            </h2>
+            <a href="{% url 'dashboard:notifications' %}" class="card-header-link">View all</a>
+        </div>
+        <div class="card-body p-0">
+            {% if recent_notifications %}
+            <ul class="notif-list">
+                {% for notif in recent_notifications %}
+                <li class="notif-item {% if not notif.is_read %}notif-unread{% endif %}">
+                    <div class="notif-dot"></div>
+                    <div class="notif-content">
+                        <p class="notif-message">{{ notif.message }}</p>
+                        <span class="notif-time">{{ notif.created_at|timesince }} ago</span>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-bell-slash empty-icon"></i>
+                <p>No notifications yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

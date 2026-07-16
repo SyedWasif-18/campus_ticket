@@ -1,0 +1,260 @@
+{% extends 'base_dashboard.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Raise Ticket — Campus Helpdesk{% endblock %}
+{% block nav_raise %}active{% endblock %}
+{% block page_title %}Raise Ticket{% endblock %}
+
+{% block content %}
+<style>
+    /* Aesthetic Form Styles */
+    .form-container {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 2rem;
+        align-items: start;
+    }
+    
+    .form-instructions {
+        background: var(--glass-bg);
+        backdrop-filter: var(--glass-blur);
+        -webkit-backdrop-filter: var(--glass-blur);
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow-md);
+    }
+    
+    .instruction-step {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .instruction-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary-light);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+    
+    .instruction-text h4 {
+        margin-bottom: 0.25rem;
+        font-size: 1rem;
+    }
+    
+    .instruction-text p {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        margin: 0;
+    }
+    
+    .custom-field-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .custom-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+    
+    .custom-label i {
+        margin-right: 6px;
+        color: var(--primary);
+    }
+    
+    .form-control, .form-select {
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius-md);
+        transition: var(--transition);
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    
+    .form-control:focus, .form-select:focus {
+        background-color: var(--bg-surface);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-light);
+        outline: none;
+    }
+    
+    .row-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+    
+    @media (max-width: 992px) {
+        .form-container { grid-template-columns: 1fr; }
+        .row-grid { grid-template-columns: 1fr; gap: 0; }
+    }
+</style>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-heading">Request Facility Service</h1>
+        <p class="page-subtitle">Submit a request and our attenders will be notified instantly.</p>
+    </div>
+</div>
+
+<div class="form-container">
+    <!-- Left Side: Instructions -->
+    <div class="form-instructions">
+        <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+            <i class="bi bi-info-circle-fill text-primary"></i> How it works
+        </h3>
+        
+        <div class="instruction-step">
+            <div class="instruction-icon"><i class="bi bi-building"></i></div>
+            <div class="instruction-text">
+                <h4>1. Identify the Room</h4>
+                <p>Select the department and the specific room number where service is needed.</p>
+            </div>
+        </div>
+        
+        <div class="instruction-step">
+            <div class="instruction-icon"><i class="bi bi-tags"></i></div>
+            <div class="instruction-text">
+                <h4>2. Categorize the Issue</h4>
+                <p>Choose the right category (e.g. Supplies, Technical) to route the ticket to the right staff.</p>
+            </div>
+        </div>
+        
+        <div class="instruction-step">
+            <div class="instruction-icon"><i class="bi bi-lightning-charge"></i></div>
+            <div class="instruction-text">
+                <h4>3. Instant Notification</h4>
+                <p>Once submitted, all attenders in that department will be notified via live web-sockets.</p>
+            </div>
+        </div>
+        
+        {% if room_id %}
+        <div class="alert alert-success mt-4 d-flex align-items-center" style="background: var(--success-light); border: 1px solid rgba(16,185,129,0.3); color: var(--success); border-radius: var(--radius-md);">
+            <i class="bi bi-qr-code-scan" style="font-size: 1.5rem; margin-right: 15px;"></i>
+            <div>
+                <strong>Smart Scan Active</strong><br>
+                <small>Room details have been pre-filled from your QR scan.</small>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Side: The Form -->
+    <div class="card p-0 border-0 shadow-lg" style="background: transparent;">
+        <div class="card-body" style="background: var(--glass-bg); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); padding: 2.5rem;">
+            
+            <form method="post" action="">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger" style="border-radius: var(--radius-md);">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+                
+                <h4 class="mb-4" style="color: var(--primary);"><i class="bi bi-geo-alt-fill"></i> Location Details</h4>
+                <div class="row-grid">
+                    <div class="custom-field-group">
+                        <label class="custom-label" for="{{ form.department.id_for_label }}"><i class="bi bi-diagram-3"></i> Department</label>
+                        {{ form.department }}
+                        {% if form.department.errors %}<div class="text-danger small mt-1">{{ form.department.errors }}</div>{% endif %}
+                    </div>
+                    
+                    <div class="custom-field-group">
+                        <label class="custom-label" for="{{ form.room.id_for_label }}"><i class="bi bi-door-open"></i> Room</label>
+                        {{ form.room }}
+                        {% if form.room.errors %}<div class="text-danger small mt-1">{{ form.room.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                
+                <hr style="border-color: var(--border-light); margin: 2rem 0;">
+                
+                <h4 class="mb-4" style="color: var(--purple);"><i class="bi bi-wrench-adjustable"></i> Request Details</h4>
+                <div class="row-grid">
+                    <div class="custom-field-group">
+                        <label class="custom-label" for="{{ form.category.id_for_label }}"><i class="bi bi-collection"></i> Category</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}<div class="text-danger small mt-1">{{ form.category.errors }}</div>{% endif %}
+                    </div>
+                    
+                    <div class="custom-field-group">
+                        <label class="custom-label" for="{{ form.sub_category.id_for_label }}"><i class="bi bi-list-nested"></i> Item / Issue</label>
+                        {{ form.sub_category }}
+                        {% if form.sub_category.errors %}<div class="text-danger small mt-1">{{ form.sub_category.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                
+                <div class="custom-field-group">
+                    <label class="custom-label" for="{{ form.priority.id_for_label }}"><i class="bi bi-exclamation-triangle"></i> Priority</label>
+                    {{ form.priority }}
+                    {% if form.priority.errors %}<div class="text-danger small mt-1">{{ form.priority.errors }}</div>{% endif %}
+                </div>
+                
+                <div class="custom-field-group">
+                    <label class="custom-label" for="{{ form.description.id_for_label }}"><i class="bi bi-card-text"></i> Additional Description</label>
+                    {{ form.description }}
+                    <div class="text-muted small mt-1">Provide any specific details that might help the attender prepare.</div>
+                    {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors }}</div>{% endif %}
+                </div>
+                
+                <div class="mt-5 text-end">
+                    <button type="submit" class="btn btn-primary btn-lg" style="padding-left: 2rem; padding-right: 2rem;">
+                        Submit Request <i class="bi bi-send-fill ms-2"></i>
+                    </button>
+                </div>
+                
+            </form>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+    // Simple script to auto-filter sub-categories based on category
+    document.addEventListener('DOMContentLoaded', function() {
+        const categorySelect = document.getElementById('id_category');
+        const subCategorySelect = document.getElementById('id_sub_category');
+        
+        if(categorySelect && subCategorySelect) {
+            // Mapping of categories to their allowed sub-categories
+            const map = {
+                'SUPPLIES': ['Chalk', 'Duster', 'Marker', 'White Paper'],
+                'TECHNICAL': ['Projector', 'Microphone', 'Speaker', 'Smart Board', 'Computer', 'Internet'],
+                'MAINTENANCE': ['Fan', 'Lights', 'Door', 'Bench', 'Water Leakage']
+            };
+            
+            function updateSubCategories() {
+                const selectedCat = categorySelect.value;
+                const allowed = map[selectedCat] || [];
+                
+                Array.from(subCategorySelect.options).forEach(opt => {
+                    if(opt.value === '') {
+                        opt.style.display = 'block';
+                    } else if(allowed.includes(opt.value)) {
+                        opt.style.display = 'block';
+                    } else {
+                        opt.style.display = 'none';
+                        if(subCategorySelect.value === opt.value) {
+                            subCategorySelect.value = '';
+                        }
+                    }
+                });
+            }
+            
+            categorySelect.addEventListener('change', updateSubCategories);
+            updateSubCategories(); // Run once on load
+        }
+    });
+</script>
+{% endblock %}
